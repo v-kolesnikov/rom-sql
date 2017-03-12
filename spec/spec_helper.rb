@@ -1,6 +1,8 @@
 require 'bundler'
 Bundler.setup
 
+require 'dry-initializer'
+
 if RUBY_ENGINE == 'ruby' && ENV['CI'] == 'true'
   require 'simplecov'
   SimpleCov.start do
