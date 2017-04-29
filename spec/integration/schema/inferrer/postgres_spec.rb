@@ -125,6 +125,41 @@ RSpec.describe 'ROM::SQL::Schema::PostgresInferrer', :postgres do
     end
   end
 
+  context 'character datatypes' do
+    before do
+      conn.create_table :test_characters do
+        column :text1, 'character', null: false
+        column :text2, 'character(40)', null: false
+        column :text3, 'character varying', null: false
+        column :text4, 'character varying(100)', null: false
+        column :text5, 'char', null: false
+        column :text6, 'char(40)', null: false
+        column :text7, 'varchar', null: false
+        column :text8, 'varchar(100)', null: false
+        column :text9, 'text', null: false
+      end
+      inferrable_relations.concat %i[test_characters]
+      conf.relation(:test_characters) { schema(infer: true) }
+    end
+
+    let(:source) { container.relations[:test_characters].name }
+    let(:char_t) { ROM::SQL::Types::String.meta(source: source) }
+
+    it 'infers attributes with size constraints' do
+      expect(container.relations[:test_characters].schema.to_h).to eql(
+        text1: char_t.meta(name: :text1, limit: 1),
+        text2: char_t.meta(name: :text2, limit: 40),
+        text3: char_t.meta(name: :text3),
+        text4: char_t.meta(name: :text4, limit: 100),
+        text5: char_t.meta(name: :text5, limit: 1),
+        text6: char_t.meta(name: :text6, limit: 40),
+        text7: char_t.meta(name: :text7, limit: 255),
+        text8: char_t.meta(name: :text8, limit: 100),
+        text9: char_t.meta(name: :text9)
+      )
+    end
+  end
+
   context 'with a table without columns' do
     before do
       conn.create_table(:dummy) unless conn.table_exists?(:dummy)

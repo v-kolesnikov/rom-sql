@@ -6,7 +6,13 @@ module ROM
   module SQL
     class Schema
       class PostgresInferrer < Inferrer[:postgres]
-        defines :db_numeric_types, :db_type_mapping, :db_array_type_matcher
+        defines :db_array_type_matcher, :db_character_type_regex,
+                :db_numeric_types, :db_type_mapping
+
+        db_character_type_regex(
+          # Match { text | character [ (n) ] | character varying [ (n) ] }
+          /(text|character(?: varying)?(?:\((?<limit>\d+)\))?)/
+        )
 
         db_numeric_types %w(
           smallint integer bigint
@@ -57,6 +63,9 @@ module ROM
             self.class.db_type_mapping[db_type]
           elsif db_type.start_with?('timestamp')
             Types::Time
+          elsif db_type.match(self.class.db_character_type_regex)
+            limit = Regexp.last_match[:limit]
+            limit ? Types::String.meta(limit: limit.to_i) : Types::String
           else
             super
           end
