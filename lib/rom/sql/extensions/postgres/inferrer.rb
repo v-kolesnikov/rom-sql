@@ -53,14 +53,13 @@ module ROM
             Types::PG::Array(db_type)
           elsif enum_values
             Types::String.enum(*enum_values)
+          elsif self.class.db_type_mapping[db_type]
+            self.class.db_type_mapping[db_type]
+          elsif db_type.start_with?('timestamp')
+            Types::Time
           else
-            map_db_type(db_type) || super
+            super
           end
-        end
-
-        def map_db_type(db_type)
-          self.class.db_type_mapping[db_type] ||
-            (db_type.start_with?('timestamp') ? Types::Time : nil)
         end
 
         def numeric?(ruby_type, db_type)
