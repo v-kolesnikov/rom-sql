@@ -160,6 +160,25 @@ RSpec.describe 'ROM::SQL::Schema::PostgresInferrer', :postgres do
     end
   end
 
+  context 'character types without null' do
+    before do
+      conn.create_table :test_characters do
+        column :text1, 'varchar(100)'
+      end
+      inferrable_relations.concat %i[test_characters]
+      conf.relation(:test_characters) { schema(infer: true) }
+    end
+
+    let(:source) { container.relations[:test_characters].name }
+    let(:char_t) { ROM::SQL::Types::String.meta(source: source) }
+
+    it 'infers attributes with size constraints' do
+      expect(container.relations[:test_characters].schema.to_h).to eql(
+        text1: char_t.optional.meta(name: :text1, limit: 100)
+      )
+    end
+  end
+
   context 'with a table without columns' do
     before do
       conn.create_table(:dummy) unless conn.table_exists?(:dummy)
